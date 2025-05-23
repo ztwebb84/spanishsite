@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Saved Words & Flashcards</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    .flashcard { 
+      border: 1px solid #ccc; padding: 20px; 
+      width: 300px; text-align: center; margin: 20px auto; 
+      display: none; 
+    }
+    .flashcard button { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Saved Words</h1>
+  <table id="wordsTable">
+    <thead>
+      <tr><th>Word</th><th>Translation</th><th>Sample Sentence</th><th>Actions</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button id="showFlashcardsBtn">Show Flashcards</button>
+
+  <div class="flashcard" id="flashcard">
+    <div id="flashWord" style="font-size:24px; font-weight:bold;"></div>
+    <button id="showAnswerBtn">Show Answer</button>
+    <div id="flashAnswer" style="margin-top:10px; display:none;"></div>
+    <button id="nextBtn" style="display:none; margin-top:10px;">Next</button>
+  </div>
+
+<script>
+  const WORDS_KEY = 'savedWords';
+  let words = [];
+  let idx = 0;
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    words = JSON.parse(localStorage.getItem(WORDS_KEY)||'[]');
+    renderTable();
+    document.getElementById('showFlashcardsBtn').onclick = startFlashcards;
+    document.getElementById('showAnswerBtn').onclick = showAnswer;
+    document.getElementById('nextBtn').onclick = nextCard;
+  });
+
+  function renderTable() {
+    const tbody = document.querySelector('#wordsTable tbody');
+    tbody.innerHTML = '';
+    words.forEach((w,i)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${w.word}</td>
+        <td>${w.translation}</td>
+        <td>
+          <input type="text" value="${w.sample||''}" id="sample${i}" placeholder="Enter sample">
+        </td>
+        <td>
+          <button onclick="saveSample(${i})">Save</button>
+          <button onclick="deleteWord(${i})">Delete</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function saveSample(i) {
+    const val = document.getElementById('sample'+i).value.trim();
+    words[i].sample = val;
+    localStorage.setItem(WORDS_KEY, JSON.stringify(words));
+    alert('Sample saved');
+  }
+  function deleteWord(i) {
+    if(!confirm('Delete this word?')) return;
+    words.splice(i,1);
+    localStorage.setItem(WORDS_KEY, JSON.stringify(words));
+    renderTable();
+  }
+
+  function startFlashcards() {
+    if(!words.length) return alert('No words saved');
+    idx = 0; showCard();
+  }
+  function showCard() {
+    const card = document.getElementById('flashcard');
+    card.style.display = 'block';
+    document.getElementById('flashWord').textContent = words[idx].word;
+    document.getElementById('flashAnswer').style.display = 'none';
+    document.getElementById('showAnswerBtn').style.display = 'inline-block';
+    document.getElementById('nextBtn').style.display = 'none';
+  }
+  function showAnswer() {
+    const ans = document.getElementById('flashAnswer');
+    ans.innerHTML = words[idx].translation + '<br>' + (words[idx].sample||'');
+    ans.style.display = 'block';
+    document.getElementById('showAnswerBtn').style.display = 'none';
+    document.getElementById('nextBtn').style.display = 'inline-block';
+  }
+  function nextCard() {
+    idx++;
+    if(idx >= words.length) {
+      alert('All done!');
+      document.getElementById('flashcard').style.display = 'none';
+    } else showCard();
+  }
+</script>
+</body>
+</html>

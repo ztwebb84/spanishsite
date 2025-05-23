@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Medical Spanish Phrases</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .phrase { margin-bottom: 20px; }
+    .spanish-text { display: inline; }
+    button { margin-left: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Medical Spanish</h1>
+  <div id="phrases"></div>
+
+<script>
+  // Add or remove entries here:
+  const phrases = [
+    { english: 'How are you feeling today?', spanish: '¿Cómo se siente hoy?' },
+    { english: 'Do you have any allergies?', spanish: '¿Tiene alguna alergia?' },
+    // … add more below …
+  ];
+
+  function renderPhrases() {
+    const container = document.getElementById('phrases');
+    phrases.forEach((p,i) => {
+      const div = document.createElement('div');
+      div.className = 'phrase';
+      div.innerHTML = `
+        <p><strong>English:</strong> ${p.english}</p>
+        <p>
+          <strong>Spanish:</strong>
+          <span class="spanish-text" id="span${i}">${p.spanish}</span>
+          <button onclick="toggle(${i})">Hide/Show</button>
+          <button onclick="cloze(${i},1)">Cloze 1st letter</button>
+          <button onclick="cloze(${i},2)">Cloze 2nd letter</button>
+        </p>`;
+      container.appendChild(div);
+    });
+  }
+
+  function toggle(i) {
+    const el = document.getElementById('span'+i);
+    el.style.visibility = el.style.visibility==='hidden' ? 'visible' : 'hidden';
+  }
+
+  function cloze(i, pos) {
+    const el = document.getElementById('span'+i);
+    const original = phrases[i].spanish;
+    const words = original.split(/(\s+)/).map(w=>{
+      // preserve spaces
+      if (w.trim()==='') return w;
+      return w.split('').map((ch,j)=>{
+        if (j===pos-1) return ch;
+        // leave punctuation
+        if (!/[A-Za-zÁÉÍÓÚÑáéíóúñÜü]/.test(ch)) return ch;
+        return '_';
+      }).join('');
+    }).join('');
+    el.textContent = (el.textContent===original) ? words : original;
+  }
+
+  document.addEventListener('DOMContentLoaded', renderPhrases);
+</script>
+</body>
+</html>

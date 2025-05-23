@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spanish Reader & Translator</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #textDisplay { margin-top: 20px; line-height: 1.6; }
+    .word { cursor: pointer; }
+    .highlight { background-color: yellow; }
+    #translationBox {
+      position: fixed; bottom: 20px; left: 20px;
+      background: #f0f0f0; border: 1px solid #ccc; padding: 10px;
+      display: none;
+    }
+    #savedTextsList { margin-top: 10px; }
+    .savedTextItem { margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Spanish Reader & Translator</h1>
+
+  <textarea id="textInput" rows="10" cols="80"
+    placeholder="Paste Spanish text here"></textarea><br>
+
+  <button id="displayTextBtn">Display Text</button>
+  <button id="saveTextBtn">Save Text</button>
+
+  <h2>Saved Texts</h2>
+  <div id="savedTextsList"></div>
+
+  <div id="textDisplay"></div>
+
+  <div id="translationBox">
+    <strong><span id="translatedWord"></span>:</strong>
+    <span id="translatedText"></span>
+    <button id="saveWordBtn">Save Word</button>
+  </div>
+
+<script>
+  const TEXTS_KEY = 'savedTexts';
+  const WORDS_KEY = 'savedWords';
+
+  document.addEventListener('DOMContentLoaded', ()=> {
+    showSavedTexts();
+
+    document.getElementById('displayTextBtn').onclick = () => {
+      displayText(document.getElementById('textInput').value);
+    };
+
+    document.getElementById('saveTextBtn').onclick = () => {
+      const text = document.getElementById('textInput').value.trim();
+      if (!text) return alert('Enter some text first.');
+      saveText(text);
+      showSavedTexts();
+      alert('Text saved!');
+    };
+  });
+
+  function getSavedTexts() {
+    return JSON.parse(localStorage.getItem(TEXTS_KEY)||'[]');
+  }
+  function saveText(text) {
+    const arr = getSavedTexts();
+    arr.push({ id: Date.now(), content: text });
+    localStorage.setItem(TEXTS_KEY, JSON.stringify(arr));
+  }
+  function showSavedTexts() {
+    const div = document.getElementById('savedTextsList');
+    div.innerHTML = '';
+    getSavedTexts().forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'savedTextItem';
+      const btn = document.createElement('button');
+      btn.textContent = 'Load';
+      btn.onclick = ()=> {
+        document.getElementById('textInput').value = t.content;
+        displayText(t.content);
+      };
+      row.appendChild(btn);
+      row.appendChild(document.createTextNode(' '+t.content.slice(0,30)+'…'));
+      div.appendChild(row);
+    });
+  }
+
+  function displayText(txt) {
+    const out = document.getElementById('textDisplay');
+    out.innerHTML = '';
+    txt.split(/\s+/).forEach(w => {
+      const span = document.createElement('span');
+      span.className = 'word';
+      span.textContent = w;
+      span.onclick = ()=> translateWord(w, span);
+      out.appendChild(span);
+      out.appendChild(document.createTextNode(' '));
+    });
+  }
+
+  async function translateWord(word, spanEl) {
+    document.querySelectorAll('.highlight').forEach(e=>e.classList.remove('highlight'));
+    spanEl.classList.add('highlight');
+
+    const res = await fetch('https://libretranslate.de/translate', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        q: word, source:'es', target:'en', format:'text'
+      })
+    });
+    const { translatedText } = await res.json();
+    showTranslation(word, translatedText);
+  }
+
+  function showTranslation(word, translation) {
+    document.getElementById('translatedWord').textContent = word;
+    document.getElementById('translatedText').textContent = translation;
+    document.getElementById('translationBox').style.display = 'block';
+    document.getElementById('saveWordBtn').onclick = ()=> {
+      saveWord(word, translation);
+      alert('Word saved!');
+    };
+  }
+
+  function getSavedWords() {
+    return JSON.parse(localStorage.getItem(WORDS_KEY)||'[]');
+  }
+  function saveWord(word, translation) {
+    const arr = getSavedWords();
+    if (!arr.find(w=>w.word===word)) {
+      arr.push({ word, translation, sample: '' });
+      localStorage.setItem(WORDS_KEY, JSON.stringify(arr));
+    }
+  }
+</script>
+</body>
+</html>
